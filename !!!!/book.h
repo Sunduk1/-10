@@ -1,8 +1,6 @@
+
 #pragma once
 #include <iostream>
-#include <string>
-
-
 class Book
 {
 private:
@@ -20,21 +18,17 @@ public:
 
     Book(const char* author, const char* title, int year)
     {
-
-        strcpy_s(Author, sizeof(Author), author);
+        strcpy_s(Author, sizeof(Title), author);
         strcpy_s(Title, sizeof(Title), title);
         PublishedYear = year;
     }
 
     void SetFromConsole()
     {
-        std::cout << "Добавление книги.\n";
-
-        std::cout << "Введите автора книги: ";
-        std::cin.getline(Author, sizeof(Author));
-
+        std::cout << "Добавление книги.\nВведите автора книги: ";
+        std::cin >> Author;
         std::cout << "Введите название книги: ";
-        std::cin.getline(Title, sizeof(Title));
+        std::cin >> Title;
 
         while (true)
         {
@@ -43,27 +37,33 @@ public:
             {
                 if (PublishedYear < 0)
                     throw std::invalid_argument("Год не может быть отрицательным.");
-                if (PublishedYear > 100000)
-                    throw std::invalid_argument("Год не может быть больше текущего.");
                 break;
             }
             else
             {
+                throw std::runtime_error("Ошибка ввода: ожидалось целое число.");
                 std::cin.clear();
                 std::cin.ignore(10000, '\n');
-                throw std::runtime_error("Ошибка ввода: ожидалось целое число.");
             }
         }
-        std::cin.ignore(10000, '\n');
     }
 
     void Print() const
     {
-        std::cout << "Автор: " << Author << "\nНазвание: " << Title
-            << "\nГод: " << PublishedYear << "\n\n";
+        std::cout << Author << "\t" << Title << "\t" << PublishedYear << std::endl;
     }
 
-    const char* GetTitle() const { return Title; }
-    const char* GetAuthor() const { return Author; }
-    int GetYear() const { return PublishedYear; }
+    const char* GetTitle() const 
+    { 
+        return Title;
+    }
+    const char* GetAuthor() const
+    {
+        return Author; 
+    }
+    int GetYear() const 
+    { 
+        return PublishedYear;
+    }
 };
+
