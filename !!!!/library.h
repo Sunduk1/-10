@@ -1,32 +1,37 @@
 #pragma once
 #include "book.h"
 #include <vector>
+#include <fstream>
+#include <stdexcept>
 
 class library
 {
 private:
-    std::vector<std::unique_ptr<Book>> books;
-
+	std::vector<Book*> books;
 public:
-
-
-    void Add(std::unique_ptr<Book> book)
+    ~library()
     {
-        books.push_back(std::move(book));
+        for (auto& book : books)
+            delete book;
     }
+
 
     void AddFromConsole()
     {
-        auto book = std::make_unique<Book>();
+        Book* book = new Book();
+
         try
         {
             book->SetFromConsole();
-            books.push_back(std::move(book));
-            std::cout << "Книга успешно добавлена!\n";
+            books.push_back(book);
         }
         catch (const std::exception& e)
         {
+            delete book; 
             std::cout << "Ошибка при добавлении книги: " << e.what() << std::endl;
+
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
         }
     }
 
@@ -38,47 +43,93 @@ public:
             return;
         }
 
-        std::cout << "\n========== Список книг ==========\n";
-        std::cout << "Всего книг: " << books.size() << "\n\n";
+        std::cout << "\n--- Список книг  ---\n";
+        std::cout << "Автор\t\tНазвание\t\tГод\n";
+        std::cout << "-------------------------------------------------------------\n";
 
-        for (size_t i = 0; i < books.size(); ++i)
-        {
-            std::cout << "Книга #" << i + 1 << ":\n";
-            books[i]->Print();
-        }
-        std::cout << "==================================\n";
-    }
-
-    void FindByAuthor(const char* author) const
-    {
-        bool found = false;
         for (const auto& book : books)
-        {
-            if (strcmp(book->GetAuthor(), author) == 0)
-            {
-                if (!found)
-                {
-                    std::cout << "\nКниги автора " << author << ":\n";
-                    found = true;
-                }
-                book->Print();
-            }
-        }
-        if (!found)
-            std::cout << "Книги автора " << author << " не найдены.\n";
+            book->Print();
     }
 
-    void RemoveAt(size_t index)
+    void DeleteIndex(int index) 
     {
-        if (index < books.size())
+        if (index < 0)
         {
-            books.erase(books.begin() + index);
-            std::cout << "Книга удалена.\n";
+            std::cout << "Неверно введен номер книги\n";
+            return;
         }
-        else
+
+        delete books[index];
+        books.erase(books.begin() + index);
+        std::cout << "Книга удалена!\n";
+    }
+
+    void SaveToFile(const char* filename) const
+    {
+        try
         {
-            std::cout << "Неверный индекс!\n";
+            std::ofstream file(filename);
+
+            if (!file.is_open())
+                throw std::runtime_error(std::string("Не удалось открыть файл для записи: ") + filename);
+
+            for (const auto& book : books)
+            {
+                file << book->GetAuthor() << "\n"
+                    << book->GetTitle() << "\n"
+                    << book->GetYear() << "\n";
+            }
+
+            file.close();
+            std::cout << "Библиотека сохранена в файл: " << filename << std::endl;
+        }
+        catch (const std::exception& e)
+        {
+            std::cout << "Ошибка сохранения: " << e.what() << std::endl;
         }
     }
-    size_t GetCount() const { return books.size(); }
+
+    void LoadFromFile(const char* filename)
+    {
+        try
+        {
+            std::ifstream file(filename);
+
+            if (!file.is_open())
+                throw std::runtime_error(std::string("Не удалось открыть файл для чтения: ") + filename);
+
+            for (auto& book : books)
+                delete book;
+            books.clear();
+
+            char author[255], title[255];
+            int year;
+
+            while (file.getline(author, 255))
+            {
+                if (!file.getline(title, 255))
+                    throw std::runtime_error("Файл повреждён: отсутствует название книги.");
+
+                if (!(file >> year))
+                    throw std::runtime_error("Файл повреждён: отсутствует год публикации.");
+
+                file.ignore(); 
+
+                Book* book = new Book(author, title, year);
+                books.push_back(book);
+            }
+
+            file.close();
+            std::cout << "Загружено книг: " << books.size() << std::endl;
+        }
+        catch (const std::exception& e)
+        {
+            std::cout << "Ошибка загрузки: " << e.what() << std::endl;
+
+            for (auto& book : books)
+                delete book;
+            books.clear();
+        }
+    }
+
 };
